@@ -162,7 +162,7 @@ stages:
                         echo "Missing app service name or resource group"
                         exit 1
                       fi
-                      if [ -z "$(api_key)" ] || [ -z "$(secret_key)" ]; then
+                      if [ -z "${API_KEY:-}" ] || [ -z "${SECRET_KEY:-}" ]; then
                         echo "api_key/secret_key is empty. Check variable group api-devops-secrets authorization and Key Vault linkage."
                         exit 1
                       fi
@@ -171,8 +171,8 @@ stages:
                         -g "$(appServiceResourceGroup)" \
                         -n "$(STAGING_APP_SERVICE_NAME)" \
                         --settings \
-                        "API_KEY=$(api_key)" \
-                        "SECRET_KEY=$(secret_key)" \
+                        "API_KEY=${API_KEY}" \
+                        "SECRET_KEY=${SECRET_KEY}" \
                         "WEBSITES_PORT=8000" \
                         "WEBSITES_CONTAINER_START_TIME_LIMIT=600"
 
@@ -180,6 +180,9 @@ stages:
                         -g "$(appServiceResourceGroup)" \
                         -n "$(STAGING_APP_SERVICE_NAME)" \
                         --generic-configurations '{"healthCheckPath":"/health"}'
+                  env:
+                    API_KEY: $(api_key)
+                    SECRET_KEY: $(secret_key)
 
                 - script: |
                     echo "Deployed to staging: $(STAGING_APP_SERVICE_NAME)"
@@ -217,7 +220,7 @@ stages:
                         echo "Missing app service name or resource group"
                         exit 1
                       fi
-                      if [ -z "$(api_key)" ] || [ -z "$(secret_key)" ]; then
+                      if [ -z "${API_KEY:-}" ] || [ -z "${SECRET_KEY:-}" ]; then
                         echo "api_key/secret_key is empty. Check variable group api-devops-secrets authorization and Key Vault linkage."
                         exit 1
                       fi
@@ -226,8 +229,8 @@ stages:
                         -g "$(appServiceResourceGroup)" \
                         -n "$(PRODUCTION_APP_SERVICE_NAME)" \
                         --settings \
-                        "API_KEY=$(api_key)" \
-                        "SECRET_KEY=$(secret_key)" \
+                        "API_KEY=${API_KEY}" \
+                        "SECRET_KEY=${SECRET_KEY}" \
                         "WEBSITES_PORT=8000" \
                         "WEBSITES_CONTAINER_START_TIME_LIMIT=600"
 
@@ -235,6 +238,9 @@ stages:
                         -g "$(appServiceResourceGroup)" \
                         -n "$(PRODUCTION_APP_SERVICE_NAME)" \
                         --generic-configurations '{"healthCheckPath":"/health"}'
+                  env:
+                    API_KEY: $(api_key)
+                    SECRET_KEY: $(secret_key)
 
                 - script: |
                     echo "Deployed to production: $(PRODUCTION_APP_SERVICE_NAME)"
