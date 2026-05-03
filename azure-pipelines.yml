@@ -111,6 +111,10 @@ stages:
               repository: '$(imageRepository)'
               dockerfile: '$(dockerfilePath)'
               containerRegistry: '$(dockerRegistryServiceConnection)'
+              arguments: |
+                --build-arg BUILD_DATE=$(Build.BuildId)
+                --build-arg VERSION=$(tag)
+                --build-arg VCS_REF=$(Build.SourceVersion)
               tags: |
                 $(tag)
                 $(tagLatest)
@@ -232,20 +236,3 @@ stages:
                     echo "Image: $(containerRegistry)/$(imageRepository):$(tag)"
                   displayName: 'Print production deployment info'
 
-  # ============ QUALITY GATE ============
-  - stage: QualityGate
-    displayName: 'Quality Gate'
-    dependsOn:
-      - BuildTest
-      - DockerBuildPush
-    condition: succeeded()
-    jobs:
-      - job: QualityCheck
-        displayName: 'Quality Check'
-        steps:
-          - script: |
-              echo "✓ All tests passed"
-              echo "✓ Docker image built and pushed successfully"
-              echo "✓ Code quality checks passed"
-              echo "✓ Security scan completed"
-            displayName: 'Quality Gate Summary'
