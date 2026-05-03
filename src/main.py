@@ -98,6 +98,7 @@ def cleanup_expired_tokens():
     if expired_count:
         logger.info(f"Cleaned up {expired_count} expired tokens from replay store")
 
+
 def is_token_reused(token: str) -> bool:
     """Verificar si un JWT ya fue usado en algun nodo."""
     with get_replay_store_connection() as connection:
@@ -199,6 +200,7 @@ async def devops_endpoint(
    
     cleanup_expired_tokens()
    
+    assert x_jwt_kwy is not None
     if is_token_reused(x_jwt_kwy):
         logger.warning(f"JWT token reuse attempt detected - token already used in previous transaction")
         raise HTTPException(status_code=401, detail="JWT token has already been used in a previous transaction. Use a unique JWT for each transaction.")
