@@ -57,18 +57,19 @@ stages:
 
           - task: PublishBuildArtifacts@1
             inputs:
-              pathToPublish: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+              pathToPublish: '$(System.DefaultWorkingDirectory)/coverage.xml'
               artifactName: 'coverage-xml'
               publishLocation: 'Container'
             displayName: 'Publish coverage XML as artifact'
+            condition: always()
 
           - task: PublishBuildArtifacts@1
             inputs:
-              pathToPublish: '$(System.DefaultWorkingDirectory)/**/htmlcov'
+              pathToPublish: '$(System.DefaultWorkingDirectory)/htmlcov'
               artifactName: 'coverage-html'
               publishLocation: 'Container'
             displayName: 'Publish coverage HTML report as artifact'
-
+            condition: always()
           - script: |
               black --check src/ test/
             displayName: 'Black code formatting check'
