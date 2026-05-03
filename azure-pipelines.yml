@@ -47,7 +47,7 @@ stages:
             displayName: 'Install dependencies'
 
           - script: |
-              pip install pytest pytest-cov black ruff mypy bandit
+              pip install pytest pytest-cov black ruff mypy bandit pbr
             displayName: 'Install dev dependencies'
           
           - script: |
