@@ -157,7 +157,29 @@ stages:
                     scriptType: 'bash'
                     scriptLocation: 'inlineScript'
                     inlineScript: |
-                      az webapp config appsettings set -g $(appServiceResourceGroup) -n $(STAGING_APP_SERVICE_NAME) --settings API_KEY=$(api_key) SECRET_KEY=$(secret_key) WEBSITES_PORT=8000 WEBSITES_CONTAINER_START_TIME_LIMIT=600
+                      set -euo pipefail
+                      if [ -z "$(STAGING_APP_SERVICE_NAME)" ] || [ -z "$(appServiceResourceGroup)" ]; then
+                        echo "Missing app service name or resource group"
+                        exit 1
+                      fi
+                      if [ -z "$(api_key)" ] || [ -z "$(secret_key)" ]; then
+                        echo "api_key/secret_key is empty. Check variable group api-devops-secrets authorization and Key Vault linkage."
+                        exit 1
+                      fi
+
+                      az webapp config appsettings set \
+                        -g "$(appServiceResourceGroup)" \
+                        -n "$(STAGING_APP_SERVICE_NAME)" \
+                        --settings \
+                        "API_KEY=$(api_key)" \
+                        "SECRET_KEY=$(secret_key)" \
+                        "WEBSITES_PORT=8000" \
+                        "WEBSITES_CONTAINER_START_TIME_LIMIT=600"
+
+                      az webapp config set \
+                        -g "$(appServiceResourceGroup)" \
+                        -n "$(STAGING_APP_SERVICE_NAME)" \
+                        --generic-configurations '{"healthCheckPath":"/health"}'
 
                 - script: |
                     echo "Deployed to staging: $(STAGING_APP_SERVICE_NAME)"
@@ -190,7 +212,29 @@ stages:
                     scriptType: 'bash'
                     scriptLocation: 'inlineScript'
                     inlineScript: |
-                      az webapp config appsettings set -g $(appServiceResourceGroup) -n $(PRODUCTION_APP_SERVICE_NAME) --settings API_KEY=$(api_key) SECRET_KEY=$(secret_key) WEBSITES_PORT=8000 WEBSITES_CONTAINER_START_TIME_LIMIT=600
+                      set -euo pipefail
+                      if [ -z "$(PRODUCTION_APP_SERVICE_NAME)" ] || [ -z "$(appServiceResourceGroup)" ]; then
+                        echo "Missing app service name or resource group"
+                        exit 1
+                      fi
+                      if [ -z "$(api_key)" ] || [ -z "$(secret_key)" ]; then
+                        echo "api_key/secret_key is empty. Check variable group api-devops-secrets authorization and Key Vault linkage."
+                        exit 1
+                      fi
+
+                      az webapp config appsettings set \
+                        -g "$(appServiceResourceGroup)" \
+                        -n "$(PRODUCTION_APP_SERVICE_NAME)" \
+                        --settings \
+                        "API_KEY=$(api_key)" \
+                        "SECRET_KEY=$(secret_key)" \
+                        "WEBSITES_PORT=8000" \
+                        "WEBSITES_CONTAINER_START_TIME_LIMIT=600"
+
+                      az webapp config set \
+                        -g "$(appServiceResourceGroup)" \
+                        -n "$(PRODUCTION_APP_SERVICE_NAME)" \
+                        --generic-configurations '{"healthCheckPath":"/health"}'
 
                 - script: |
                     echo "Deployed to production: $(PRODUCTION_APP_SERVICE_NAME)"
