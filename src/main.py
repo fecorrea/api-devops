@@ -179,7 +179,9 @@ async def login(request_data: LoginRequest):
     token = generate_jwt_token()
     logger.info("JWT token generated via /auth/login endpoint")
 
-    return LoginResponse(access_token=token, token_type=TOKEN_TYPE, expires_in=JWT_EXPIRATION_SECONDS)
+    return LoginResponse(
+        access_token=token, token_type=TOKEN_TYPE, expires_in=JWT_EXPIRATION_SECONDS
+    )
 
 
 @app.api_route("/DevOps", methods=["POST", "GET", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
