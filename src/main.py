@@ -29,6 +29,9 @@ REPLAY_STORE_PATH = Path(os.getenv("REPLAY_STORE_PATH", "data/replay_store.db"))
 
 REPLAY_STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
 
+# Token type returned on login responses
+TOKEN_TYPE = os.getenv("TOKEN_TYPE", "bearer")
+
 
 def get_replay_store_connection():
     """Crear conexion SQLite para almacenamiento de replay"""
@@ -176,7 +179,7 @@ async def login(request_data: LoginRequest):
     token = generate_jwt_token()
     logger.info("JWT token generated via /auth/login endpoint")
 
-    return LoginResponse(access_token=token, token_type="bearer", expires_in=JWT_EXPIRATION_SECONDS)
+    return LoginResponse(access_token=token, token_type=TOKEN_TYPE, expires_in=JWT_EXPIRATION_SECONDS)
 
 
 @app.api_route("/DevOps", methods=["POST", "GET", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
@@ -206,7 +209,10 @@ async def devops_endpoint(
 
     cleanup_expired_tokens()
 
-    assert x_jwt_kwy is not None
+    if x_jwt_kwy is None:
+        logger.warning("Missing JWT token when checking for reuse")
+        raise HTTPException(status_code=401, detail="Invalid or missing JWT token")
+
     if is_token_reused(x_jwt_kwy):
         logger.warning(
             "JWT token reuse attempt detected - token already used in previous transaction"
