@@ -2,9 +2,7 @@ trigger:
   - main
   - develop
 
-pr:
-  - main
-  - develop
+pr: none
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -136,13 +134,11 @@ stages:
   - stage: DeployStaging
     displayName: 'Deploy to Staging App Service'
     dependsOn: DockerBuildPush
-    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), eq(variables['System.PullRequest.TargetBranch'], 'refs/heads/develop')))
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
     jobs:
       - deployment: DeployToStaging
         displayName: 'Deploy to Staging'
-        environment:
-          name: 'staging'
-          resourceType: 'VirtualMachine'
+        environment: 'staging'
         strategy:
           runOnce:
             deploy:
@@ -170,14 +166,12 @@ stages:
   # ============ DEPLOY TO PRODUCTION ============
   - stage: DeployProduction
     displayName: 'Deploy to Production App Service'
-    dependsOn: DeployStaging
-    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['System.PullRequest.TargetBranch'], 'refs/heads/main')))
+    dependsOn: DockerBuildPush
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - deployment: DeployToProduction
         displayName: 'Deploy to Production'
-        environment:
-          name: 'production'
-          resourceType: 'VirtualMachine'
+        environment: 'production'
         strategy:
           runOnce:
             deploy:
