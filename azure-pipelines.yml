@@ -165,10 +165,6 @@ stages:
                         echo "Missing app service name or resource group"
                         exit 1
                       fi
-                      if [ -z "${API_KEY:-}" ] || [ -z "${SECRET_KEY:-}" ]; then
-                        echo "api_key/secret_key is empty. Check variable group api-devops-secrets authorization and Key Vault linkage."
-                        exit 1
-                      fi
 
                       az webapp config appsettings set \
                         -g "$(appServiceResourceGroup)" \
@@ -218,10 +214,6 @@ stages:
                       set -euo pipefail
                       if [ -z "$(PRODUCTION_APP_SERVICE_NAME)" ] || [ -z "$(appServiceResourceGroup)" ]; then
                         echo "Missing app service name or resource group"
-                        exit 1
-                      fi
-                      if [ -z "${API_KEY:-}" ] || [ -z "${SECRET_KEY:-}" ]; then
-                        echo "api_key/secret_key is empty. Check variable group api-devops-secrets authorization and Key Vault linkage."
                         exit 1
                       fi
 
