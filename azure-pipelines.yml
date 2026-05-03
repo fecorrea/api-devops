@@ -51,7 +51,7 @@ stages:
             displayName: 'Install dev dependencies'
 
           - script: |
-              python -m pytest test/ -v --cov=src --cov-report=xml --cov-report=html
+              python -m pytest -p no:pytest_asyncio test/ -v --cov=src --cov-report=xml --cov-report=html
             displayName: 'Run pytest with coverage'
             continueOnError: false
 
