@@ -151,13 +151,13 @@ stages:
                     imageName: '$(containerRegistry)/$(imageRepository):$(tag)'
 
                 - task: AzureCLI@2
-                  displayName: 'Set App Settings (Staging): API_KEY, SECRET_KEY'
+                  displayName: 'Set App Settings (Staging): API_KEY, SECRET_KEY, WEBSITES_PORT'
                   inputs:
                     azureSubscription: '$(azureSubscription)'
                     scriptType: 'bash'
                     scriptLocation: 'inlineScript'
                     inlineScript: |
-                      az webapp config appsettings set -g $(appServiceResourceGroup) -n $(STAGING_APP_SERVICE_NAME) --settings API_KEY=$(api_key) SECRET_KEY=$(secret_key)
+                      az webapp config appsettings set -g $(appServiceResourceGroup) -n $(STAGING_APP_SERVICE_NAME) --settings API_KEY=$(api_key) SECRET_KEY=$(secret_key) WEBSITES_PORT=8000 WEBSITES_CONTAINER_START_TIME_LIMIT=600
 
                 - script: |
                     echo "Deployed to staging: $(STAGING_APP_SERVICE_NAME)"
@@ -184,13 +184,13 @@ stages:
                     imageName: '$(containerRegistry)/$(imageRepository):$(tag)'
 
                 - task: AzureCLI@2
-                  displayName: 'Set App Settings (Production): API_KEY, SECRET_KEY'
+                  displayName: 'Set App Settings (Production): API_KEY, SECRET_KEY, WEBSITES_PORT'
                   inputs:
                     azureSubscription: '$(azureSubscription)'
                     scriptType: 'bash'
                     scriptLocation: 'inlineScript'
                     inlineScript: |
-                      az webapp config appsettings set -g $(appServiceResourceGroup) -n $(PRODUCTION_APP_SERVICE_NAME) --settings API_KEY=$(api_key) SECRET_KEY=$(secret_key)
+                      az webapp config appsettings set -g $(appServiceResourceGroup) -n $(PRODUCTION_APP_SERVICE_NAME) --settings API_KEY=$(api_key) SECRET_KEY=$(secret_key) WEBSITES_PORT=8000 WEBSITES_CONTAINER_START_TIME_LIMIT=600
 
                 - script: |
                     echo "Deployed to production: $(PRODUCTION_APP_SERVICE_NAME)"
