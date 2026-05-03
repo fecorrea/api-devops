@@ -1,0 +1,102 @@
+version: '3.11'
+
+networks:
+  backend:
+    driver: bridge
+
+
+services:
+  # Nodo 1 del microservicio
+  app-node-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devops-app-node-1
+    restart: always
+    networks:
+      - backend
+    environment:
+      - API_KEY=2f5ae96c-b558-4c7b-a590-a501ae1c3f6c
+      - SECRET_KEY=${SECRET_KEY:-devops-secret}
+      - LOG_LEVEL=INFO
+      - REPLAY_STORE_PATH=data/replay_store.db
+    volumes:
+      - jwt-replay-store:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    ports:
+      - "8001:8000"
+    expose:
+      - "8000"
+    labels:
+      - "app=devops"
+      - "version=1.0"
+
+
+  # Nodo 2 del microservicio
+  app-node-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devops-app-node-2
+    restart: always
+    networks:
+      - backend
+    environment:
+      - API_KEY=2f5ae96c-b558-4c7b-a590-a501ae1c3f6c
+      - SECRET_KEY=${SECRET_KEY:-devops-secret}
+      - LOG_LEVEL=INFO
+      - REPLAY_STORE_PATH=data/replay_store.db
+    volumes:
+      - jwt-replay-store:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    ports:
+      - "8002:8000"
+    expose:
+      - "8000"
+    labels:
+      - "app=devops"
+      - "version=1.0"
+
+
+  # Balanceador de carga (Nginx)
+  balancer:
+    image: nginx:alpine
+    container_name: devops-balancer
+    restart: always
+    networks:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      app-node-1:
+        condition: service_healthy
+      app-node-2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    labels:
+      - "app=balancer"
+
+
+volumes:
+  nginx-logs:
+    driver: local
+  jwt-replay-store:
+    driver: local
