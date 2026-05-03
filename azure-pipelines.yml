@@ -174,8 +174,8 @@ stages:
                         -g "$(appServiceResourceGroup)" \
                         -n "$(STAGING_APP_SERVICE_NAME)" \
                         --settings \
-                        "API_KEY=${API_KEY}" \
-                        "SECRET_KEY=${SECRET_KEY}" \
+                        "API_KEY=$(api-key)" \
+                        "SECRET_KEY=$(secret-key)" \
                         "WEBSITES_PORT=8000" \
                         "WEBSITES_CONTAINER_START_TIME_LIMIT=600"
 
@@ -183,9 +183,6 @@ stages:
                         -g "$(appServiceResourceGroup)" \
                         -n "$(STAGING_APP_SERVICE_NAME)" \
                         --generic-configurations '{"healthCheckPath":"/health"}'
-                  env:
-                    API_KEY: $[variables['api-key']]
-                    SECRET_KEY: $[variables['secret-key']]
 
                 - script: |
                     echo "Deployed to staging: $(STAGING_APP_SERVICE_NAME)"
@@ -232,8 +229,8 @@ stages:
                         -g "$(appServiceResourceGroup)" \
                         -n "$(PRODUCTION_APP_SERVICE_NAME)" \
                         --settings \
-                        "API_KEY=${API_KEY}" \
-                        "SECRET_KEY=${SECRET_KEY}" \
+                        "API_KEY=$(api-key)" \
+                        "SECRET_KEY=$(secret-key)" \
                         "WEBSITES_PORT=8000" \
                         "WEBSITES_CONTAINER_START_TIME_LIMIT=600"
 
@@ -241,9 +238,6 @@ stages:
                         -g "$(appServiceResourceGroup)" \
                         -n "$(PRODUCTION_APP_SERVICE_NAME)" \
                         --generic-configurations '{"healthCheckPath":"/health"}'
-                  env:
-                    API_KEY: $[variables['api-key']]
-                    SECRET_KEY: $[variables['secret-key']]
 
                 - script: |
                     echo "Deployed to production: $(PRODUCTION_APP_SERVICE_NAME)"
