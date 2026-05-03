@@ -22,10 +22,7 @@ WORKDIR /build
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt && \
-    find /root/.local -type f -name '*.pyc' -delete && \
-    find /root/.local -type d -name '__pycache__' -delete
-
+RUN pip install --no-cache-dir -r requirements.txt 
 
 # ===== ETAPA 2: EJECUCION =====
 FROM python:3.11-slim
@@ -56,8 +53,6 @@ RUN groupadd --system --gid 1000 appuser && \
     useradd --system --uid 1000 --gid appuser --home-dir /home/appuser appuser && \
     mkdir -p /home/appuser && \
     chown -R appuser:appuser /home/appuser /app
-
-COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 
 COPY --from=builder /usr/local/lib/python3.11 /usr/local/lib/python3.11
 COPY --from=builder /usr/local/bin /usr/local/bin
