@@ -1,14 +1,15 @@
+import datetime
+
+import jwt
 import pytest
 from fastapi.testclient import TestClient
+
 from src.main import (
-    app,
     SECRET_KEY,
+    app,
     get_replay_store_connection,
     initialize_replay_store,
-    API_KEY_REQUIRED,
 )
-import jwt
-import datetime
 
 
 @pytest.fixture(scope="session")
@@ -131,7 +132,7 @@ def clean_replay_store():
     try:
         with get_replay_store_connection() as conn:
             conn.execute("DROP TABLE IF EXISTS used_tokens")
-    except:
+    except Exception:
         pass
 
     initialize_replay_store()
@@ -141,7 +142,7 @@ def clean_replay_store():
     try:
         with get_replay_store_connection() as conn:
             conn.execute("DELETE FROM used_tokens")
-    except:
+    except Exception:
         pass
 
 
