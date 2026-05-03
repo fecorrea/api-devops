@@ -181,8 +181,8 @@ stages:
                         -n "$(STAGING_APP_SERVICE_NAME)" \
                         --generic-configurations '{"healthCheckPath":"/health"}'
                   env:
-                    API_KEY: $(api_key)
-                    SECRET_KEY: $(secret_key)
+                    API_KEY: $(api-key)
+                    SECRET_KEY: $(secret-key)
 
                 - script: |
                     echo "Deployed to staging: $(STAGING_APP_SERVICE_NAME)"
@@ -239,8 +239,8 @@ stages:
                         -n "$(PRODUCTION_APP_SERVICE_NAME)" \
                         --generic-configurations '{"healthCheckPath":"/health"}'
                   env:
-                    API_KEY: $(api_key)
-                    SECRET_KEY: $(secret_key)
+                    API_KEY: $(api-key)
+                    SECRET_KEY: $(secret-key)
 
                 - script: |
                     echo "Deployed to production: $(PRODUCTION_APP_SERVICE_NAME)"
