@@ -87,3 +87,17 @@ Thumbs.db
 .env.staging
 secrets/
 config/local/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+terraform.tfvars
+terraform.tfvars.local
+*.tfplan
+*.tfplan.*
+terraform.tfplan
+*.tfstate.backup
+.terraform.lock.hcl
+crash.log
