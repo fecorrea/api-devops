@@ -1,15 +1,16 @@
+import datetime
+import logging
+import os
+import sqlite3
+import time
+import uuid
+from pathlib import Path
+from typing import Optional
+
+import jwt
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-import jwt
-import datetime
-import logging
-from typing import Optional
-import os
-import uuid
-import time
-import sqlite3
-from pathlib import Path
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -135,7 +136,7 @@ def validate_jwt_token(token: Optional[str]) -> bool:
         return False
 
     if is_token_reused(token):
-        logger.warning(f"JWT token already used in previous transaction")
+        logger.warning("JWT token already used in previous transaction")
         return False
     try:
         jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
@@ -208,7 +209,7 @@ async def devops_endpoint(
     assert x_jwt_kwy is not None
     if is_token_reused(x_jwt_kwy):
         logger.warning(
-            f"JWT token reuse attempt detected - token already used in previous transaction"
+            "JWT token reuse attempt detected - token already used in previous transaction"
         )
         raise HTTPException(
             status_code=401,
@@ -225,10 +226,10 @@ async def devops_endpoint(
         payload = MessageRequest(**data)
     except ValueError as e:
         logger.error(f"Invalid JSON payload: {str(e)}")
-        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+        raise HTTPException(status_code=400, detail="Invalid JSON payload") from e
     except Exception as e:
         logger.error(f"Validation error: {str(e)}")
-        raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}")
+        raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}") from e
 
     response_data = MessageResponse(message=f"Hello {payload.to} your message will be sent")
 

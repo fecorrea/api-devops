@@ -1,30 +1,22 @@
-import pytest
-import jwt
 import datetime
+import importlib
 import time
-import os
 
-from fastapi import HTTPException
+import jwt
+import pytest
 
-# Importar la aplicacion y sus funciones
-import sys
+_main = importlib.import_module("src.main")
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
-from main import (
-    generate_jwt_token,
-    validate_jwt_token,
-    is_token_reused,
-    mark_token_used,
-    cleanup_expired_tokens,
-    LoginRequest,
-    LoginResponse,
-    MessageRequest,
-    MessageResponse,
-    API_KEY_REQUIRED,
-    SECRET_KEY,
-    JWT_EXPIRATION_SECONDS,
-)
+JWT_EXPIRATION_SECONDS = _main.JWT_EXPIRATION_SECONDS
+SECRET_KEY = _main.SECRET_KEY
+LoginRequest = _main.LoginRequest
+LoginResponse = _main.LoginResponse
+MessageRequest = _main.MessageRequest
+cleanup_expired_tokens = _main.cleanup_expired_tokens
+generate_jwt_token = _main.generate_jwt_token
+is_token_reused = _main.is_token_reused
+mark_token_used = _main.mark_token_used
+validate_jwt_token = _main.validate_jwt_token
 
 
 # ===== PRUEBAS DE FUNCIONES DE JWT =====
@@ -435,6 +427,7 @@ class TestIntegration:
 
     def test_multiple_requests_with_different_tokens(self, client, valid_api_key):
         """Verificar que se pueden hacer multiples requests con tokens diferentes"""
+
         payload = {
             "message": "Test",
             "to": "user@example.com",
