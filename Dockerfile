@@ -22,7 +22,7 @@ WORKDIR /build
 
 COPY requirements.txt .
 
-RUN pip install --user --no-cache-dir -r requirements.txt && \
+RUN pip install --no-cache-dir -r requirements.txt && \
     find /root/.local -type f -name '*.pyc' -delete && \
     find /root/.local -type d -name '__pycache__' -delete
 
@@ -58,6 +58,9 @@ RUN groupadd --system --gid 1000 appuser && \
     chown -R appuser:appuser /home/appuser /app
 
 COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
+
+COPY --from=builder /usr/local/lib/python3.11 /usr/local/lib/python3.11
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY --chown=appuser:appuser ./src ./src
 COPY --chown=appuser:appuser ./test ./test
