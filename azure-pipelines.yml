@@ -149,7 +149,10 @@ stages:
                     azureSubscription: '$(azureSubscription)'
                     appName: '$(STAGING_APP_SERVICE_NAME)'
                     imageName: '$(containerRegistry)/$(imageRepository):$(tag)'
-
+                - script: |
+                    echo "api-key raw: '$(api-key)'"
+                    echo "secret-key raw: '$(secret-key)'"
+                  displayName: DEBUG RAW VARIABLES
                 - task: AzureCLI@2
                   displayName: 'Set App Settings (Staging): API_KEY, SECRET_KEY, WEBSITES_PORT'
                   inputs:
@@ -207,7 +210,7 @@ stages:
                     azureSubscription: '$(azureSubscription)'
                     appName: '$(PRODUCTION_APP_SERVICE_NAME)'
                     imageName: '$(containerRegistry)/$(imageRepository):$(tag)'
-
+                
                 - task: AzureCLI@2
                   displayName: 'Set App Settings (Production): API_KEY, SECRET_KEY, WEBSITES_PORT'
                   inputs:
