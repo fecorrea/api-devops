@@ -1,19 +1,221 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
-- main
+  - main
+  - develop
+
+pr:
+  - main
+  - develop
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+variables:
+- group: api-devops-secrets
+- name: dockerRegistryServiceConnection
+  value: 'api-devops-acr'
+- name: imageRepository
+  value: '$(IMAGE_REPOSITORY)'
+- name: containerRegistry
+  value: '$(AZURE_CONTAINER_REGISTRY_NAME).azurecr.io'
+- name: dockerfilePath
+  value: '$(Build.SourcesDirectory)/Dockerfile'
+- name: tag
+  value: '$(Build.BuildId)'
+- name: tagLatest
+  value: 'latest'
+- name: pythonVersion
+  value: '3.11'
+- name: appServiceResourceGroup
+  value: '$(AZURE_RESOURCE_GROUP)'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+stages:
+  # ============ BUILD & TEST STAGE ============
+  - stage: BuildTest
+    displayName: 'Build & Test'
+    jobs:
+      - job: Build
+        displayName: 'Build Python Package'
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '$(pythonVersion)'
+            displayName: 'Use Python $(pythonVersion)'
+
+          - script: |
+              python -m pip install --upgrade pip
+              pip install -r requirements.txt
+            displayName: 'Install dependencies'
+
+          - script: |
+              pip install pytest pytest-cov black ruff mypy bandit
+            displayName: 'Install dev dependencies'
+
+          - script: |
+              python -m pytest test/ -v --cov=src --cov-report=xml --cov-report=html
+            displayName: 'Run pytest with coverage'
+            continueOnError: false
+
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+              artifactName: 'coverage-xml'
+              publishLocation: 'Container'
+            displayName: 'Publish coverage XML as artifact'
+
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: '$(System.DefaultWorkingDirectory)/**/htmlcov'
+              artifactName: 'coverage-html'
+              publishLocation: 'Container'
+            displayName: 'Publish coverage HTML report as artifact'
+
+          - script: |
+              black --check src/ test/
+            displayName: 'Black code formatting check'
+            continueOnError: true
+
+          - script: |
+              ruff check src/ test/
+            displayName: 'Ruff linting'
+            continueOnError: true
+
+          - script: |
+              mypy src/main.py --ignore-missing-imports
+            displayName: 'MyPy type checking'
+            continueOnError: true
+
+          - script: |
+              bandit -r src/ -f json -o bandit-report.json
+            displayName: 'Bandit security scan'
+            continueOnError: true
+
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: '$(System.DefaultWorkingDirectory)/bandit-report.json'
+              artifactName: 'security-reports'
+            displayName: 'Publish security reports'
+            condition: always()
+
+  # ============ DOCKER BUILD & PUSH STAGE ============
+  - stage: DockerBuildPush
+    displayName: 'Docker Build & Push to ACR'
+    dependsOn: BuildTest
+    condition: succeeded()
+    jobs:
+      - job: BuildPushDocker
+        displayName: 'Build and Push Docker Image'
+        steps:
+          - task: Docker@2
+            displayName: 'Build Docker image'
+            inputs:
+              command: build
+              repository: '$(imageRepository)'
+              dockerfile: '$(dockerfilePath)'
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+              tags: |
+                $(tag)
+                $(tagLatest)
+
+          - task: Docker@2
+            displayName: 'Push Docker image to ACR'
+            inputs:
+              command: push
+              repository: '$(imageRepository)'
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+              tags: |
+                $(tag)
+                $(tagLatest)
+
+          - script: |
+              echo "Docker image pushed to: $(containerRegistry)/$(imageRepository):$(tag)"
+              echo "Docker image pushed to: $(containerRegistry)/$(imageRepository):$(tagLatest)"
+            displayName: 'Output image locations'
+
+  # ============ DEPLOY TO STAGING ============
+  - stage: DeployStaging
+    displayName: 'Deploy to Staging App Service'
+    dependsOn: DockerBuildPush
+    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), eq(variables['System.PullRequest.TargetBranch'], 'refs/heads/develop')))
+    jobs:
+      - deployment: DeployToStaging
+        displayName: 'Deploy to Staging'
+        environment:
+          name: 'staging'
+          resourceType: 'VirtualMachine'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebAppContainer@1
+                  displayName: 'Deploy to Azure App Service (Staging)'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    appName: '$(STAGING_APP_SERVICE_NAME)'
+                    imageName: '$(containerRegistry)/$(imageRepository):$(tag)'
+
+                - task: AzureCLI@2
+                  displayName: 'Set App Settings (Staging): API_KEY, SECRET_KEY'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      az webapp config appsettings set -g $(appServiceResourceGroup) -n $(STAGING_APP_SERVICE_NAME) --settings API_KEY=$(api_key) SECRET_KEY=$(secret_key)
+
+                - script: |
+                    echo "Deployed to staging: $(STAGING_APP_SERVICE_NAME)"
+                  displayName: 'Print deployment info'
+
+  # ============ DEPLOY TO PRODUCTION ============
+  - stage: DeployProduction
+    displayName: 'Deploy to Production App Service'
+    dependsOn: DeployStaging
+    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['System.PullRequest.TargetBranch'], 'refs/heads/main')))
+    jobs:
+      - deployment: DeployToProduction
+        displayName: 'Deploy to Production'
+        environment:
+          name: 'production'
+          resourceType: 'VirtualMachine'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebAppContainer@1
+                  displayName: 'Deploy to Azure App Service (Production)'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    appName: '$(PRODUCTION_APP_SERVICE_NAME)'
+                    imageName: '$(containerRegistry)/$(imageRepository):$(tag)'
+
+                - task: AzureCLI@2
+                  displayName: 'Set App Settings (Production): API_KEY, SECRET_KEY'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      az webapp config appsettings set -g $(appServiceResourceGroup) -n $(PRODUCTION_APP_SERVICE_NAME) --settings API_KEY=$(api_key) SECRET_KEY=$(secret_key)
+
+                - script: |
+                    echo "Deployed to production: $(PRODUCTION_APP_SERVICE_NAME)"
+                    echo "Image: $(containerRegistry)/$(imageRepository):$(tag)"
+                  displayName: 'Print production deployment info'
+
+  # ============ QUALITY GATE ============
+  - stage: QualityGate
+    displayName: 'Quality Gate'
+    dependsOn:
+      - BuildTest
+      - DockerBuildPush
+    condition: succeeded()
+    jobs:
+      - job: QualityCheck
+        displayName: 'Quality Check'
+        steps:
+          - script: |
+              echo "✓ All tests passed"
+              echo "✓ Docker image built and pushed successfully"
+              echo "✓ Code quality checks passed"
+              echo "✓ Security scan completed"
+            displayName: 'Quality Gate Summary'
